@@ -1,6 +1,6 @@
 import 'https://api.mapbox.com/mapbox-gl-js/v2.9.2/mapbox-gl.js';
 import 'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js';
-import { populateTemplate } from './helpers.js';
+import { populateTemplate, describeGeoJSON, generateLayerStyle } from './helpers.js';
 
 
 
@@ -281,49 +281,36 @@ class GeoMapComponent extends HTMLElement {
         data: data
       });
       // Add a layer to visualize the GeoJSON data
-      this.map.addLayer({
-        id: 'geojson-layer',
-        type: 'circle',
-        source: 'geojson-data',
-        paint: {
-          'circle-radius': {
-            property: property,
-            type: 'exponential',
-            stops: [
-              [0, 2],
-              [10, 20]
-            ]
-          },
-          'circle-color': this.style["color"],
-          'circle-opacity': 0.5
-        }
-      });
-
-      this.showLayer('geojson-layer');
-
-      // Add click event listener to the map
-      this.map.on('click', 'geojson-layer', (e) => {
-        if (e.features.length > 0) {
-          const feature = e.features[0];
-          this.map.flyTo({center:feature.geometry.coordinates});
-          let popup_content = JSON.stringify(feature.properties);
-          if(template !== null){
-            popup_content = populateTemplate(feature.properties, template);
+      const geoJSONAnalysis = describeGeoJSON(data);
+      const layerStyles = generateLayerStyle(geoJSONAnalysis);
+      layerStyles.forEach((style) => {
+        this.map.addLayer(style);
+        this.showLayer(style.id);
+        // Add click event listener to the map
+        this.map.on('click', style.id, (e) => {
+          if (e.features.length > 0) {
+            const feature = e.features[0];
+            this.map.flyTo({center:feature.geometry.coordinates});
+            let popup_content = JSON.stringify(feature.properties);
+            if(template !== null){
+              popup_content = populateTemplate(feature.properties, template);
+            }
+            // Use showPopup method to show the feature's properties
+            this.showPopup(popup_content, feature.geometry.coordinates);
           }
-          // Use showPopup method to show the feature's properties
-          this.showPopup(popup_content, feature.geometry.coordinates);
-        }
+        });
+
+        // Change the cursor to a pointer when the it enters a feature in the 'geojson-layer'.
+        this.map.on('mouseenter', style.id, () => {
+          this.map.getCanvas().style.cursor = 'pointer';
+        });
+
+        // Change it back to a pointer when it leaves.
+        this.map.on('mouseleave', style.id, () => {
+          this.map.getCanvas().style.cursor = '';
+        });
       });
 
-      // Change the cursor to a pointer when the it enters a feature in the 'geojson-layer'.
-      this.map.on('mouseenter', 'geojson-layer', () => {
-        this.map.getCanvas().style.cursor = 'pointer';
-      });
-
-      // Change it back to a pointer when it leaves.
-      this.map.on('mouseleave', 'geojson-layer', () => {
-        this.map.getCanvas().style.cursor = '';
-      });
 
       this.dispatchEvent(
         new CustomEvent('GEO JSON LOADED', 
