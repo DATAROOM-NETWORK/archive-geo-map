@@ -28,3 +28,52 @@ export const getURLValues = (URL = window.location.href ) =>{
   }
   return options
 }
+
+export function populateTemplate(dataObject, template) {
+  // Get the template content as a string
+  const templateContent = template.innerHTML;
+  
+  // Function to replace placeholders in the template with actual values from the dataObject
+  const replacePlaceholders = (templateString, data) => {
+    return templateString.replace(/\$\{(\w+)\}/g, (match, key) => {
+      return typeof data[key] !== 'undefined' ? data[key] : match;
+    });
+  };
+  
+  // Populate the template
+  const populatedTemplate = replacePlaceholders(templateContent, dataObject);
+  
+  return populatedTemplate;
+}
+
+export function describeGeoJSON(geojson){
+    const geometryTypes = new Set();
+
+    // Initialize structure to hold property ranges
+    const propertyRanges = {};
+
+    // Loop through the features
+    geoJSON.features.forEach((feature) => {
+      // Record the geometry type
+      if (feature.geometry && feature.geometry.type) {
+        geometryTypes.add(feature.geometry.type);
+      }
+
+      // Loop through the properties and record the ranges
+      if (feature.properties) {
+        Object.keys(feature.properties).forEach(key => {
+          const value = feature.properties[key];
+          if (typeof value === 'number') {
+            if (!propertyRanges[key]) {
+              propertyRanges[key] = { min: value, max: value };
+            } else {
+              if (value < propertyRanges[key].min) propertyRanges[key].min = value;
+              if (value > propertyRanges[key].max) propertyRanges[key].max = value;
+            }
+          }
+        });
+      }
+    });
+
+    return { propertyRanges,geometryTypes }
+}
