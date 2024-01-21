@@ -290,6 +290,7 @@ class GeoMapComponent extends HTMLElement {
         this.map.on('click', style.id, (e) => {
           if (e.features.length > 0) {
             const feature = e.features[0];
+            console.log(feature.properties);
             this.map.flyTo({center:feature.geometry.coordinates});
             let popup_content = JSON.stringify(feature.properties);
             if(template !== null){
