@@ -181,6 +181,7 @@ class GeoMapComponent extends HTMLElement {
 
   mapLoaded(){
 
+    this.geocoder = this.getAttribute('geocoder');
     if(this.geocoder !== null){   
       if(typeof(MapboxGeocoder) === 'undefined'){
         this.innerHTML = `If you would like to use the geocoder element, 
